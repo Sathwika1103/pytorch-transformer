@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch.optim.lr_scheduler import LambdaLR
+import torch.quantization
 
 import warnings
 from tqdm import tqdm
@@ -177,6 +178,18 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config["seq_len"], config['seq_len'], d_model=config['d_model'])
     return model
 
+def quantize_model(model):
+    # Define the quantization configuration
+    model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+    
+    # Prepare the model for quantization
+    model_prepared = torch.quantization.prepare(model)
+    
+    # Convert to a quantized model
+    model_quantized = torch.quantization.convert(model_prepared)
+    
+    return model_quantized
+
 def train_model(config):
     # Define the device
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
@@ -266,6 +279,17 @@ def train_model(config):
             'optimizer_state_dict': optimizer.state_dict(),
             'global_step': global_step
         }, model_filename)
+
+        # Quantize the model after training
+        model_quantized = quantize_model(model)
+        
+        # Save the quantized model
+        quantized_model_filename = get_weights_file_path(config, f"{epoch:02d}_quantized")
+        torch.save(model_quantized.state_dict(), quantized_model_filename)
+
+        # Optionally, measure the quantized model size
+        quantized_model_size = os.path.getsize(quantized_model_filename) / (1024 * 1024)
+        print(f"Quantized Model Size: {quantized_model_size:.2f} MB")
 
 
 if __name__ == '__main__':
