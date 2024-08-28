@@ -178,9 +178,13 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
     return model
 
 def quantize_model(model):
-    # Define the quantization configuration
+    # Define the quantization configuration with per_tensor_affine
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
     
+    # Override the qscheme in the qconfig if necessary
+    model.qconfig.activation = torch.quantization.default_affine_fixed_qparam_qconfig.activation
+    model.qconfig.weight = torch.quantization.default_per_tensor_affine_qconfig.weight
+
     # Prepare the model for quantization
     model_prepared = torch.quantization.prepare(model)
     
