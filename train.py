@@ -178,17 +178,19 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
     return model
 
 def quantize_model(model):
-    # Define the quantization configuration with per_tensor_affine
+    # Set quantization configuration to default qconfig
     model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
     
-    # Override the qscheme in the qconfig if necessary
-    model.qconfig.activation = torch.quantization.default_affine_fixed_qparam_qconfig.activation
-    model.qconfig.weight = torch.quantization.default_per_tensor_affine_qconfig.weight
-
-    # Prepare the model for quantization
-    model_prepared = torch.quantization.prepare(model)
+    # Fuse the modules, for example: Conv + BatchNorm + ReLU
+    model_fused = torch.quantization.fuse_modules(model, [['conv', 'relu']])
     
-    # Convert to a quantized model
+    # Prepare the model for static quantization
+    model_prepared = torch.quantization.prepare(model_fused)
+    
+    # Calibrate the prepared model (if you have a calibration dataset, run the model on it)
+    # model_prepared(calibration_dataset)
+    
+    # Convert the model to a quantized version
     model_quantized = torch.quantization.convert(model_prepared)
     
     return model_quantized
