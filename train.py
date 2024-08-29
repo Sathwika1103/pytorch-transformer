@@ -23,7 +23,7 @@ import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
 
 # Pruning function
-def prune_model(model, amount=0.2):
+def prune_model(model, amount=0.4):
     """
     Prune the model by removing a percentage of connections.
     
