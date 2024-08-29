@@ -21,8 +21,9 @@ from tokenizers.pre_tokenizers import Whitespace
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
-from torch.quantization import prepare, convert
-from torch.quantization import QConfig
+from torch.quantization import get_default_qconfig, prepare, convert, QConfig
+from torch.ao.quantization.observer import default_observer  # Import if using a custom QConfig
+
 
 # Pruning function
 def prune_model(model, amount=0.5):
@@ -40,18 +41,23 @@ def prune_model(model, amount=0.5):
     return model
 
 def quantize_model(model):
+    # Set the default quantization configuration
     model.qconfig = get_default_qconfig('fbgemm')
 
+    # Apply custom qconfig to specific layers if necessary
     for name, module in model.named_modules():
-        if isinstance(module, nn.Linear):
+        if isinstance(module, torch.nn.Linear):
+            # Example: Set custom qconfig if needed for Linear layers
             module.qconfig = QConfig(activation=default_observer,
-                                     weight=per_tensor_affine)
-        # Add more conditions as needed
+                                     weight=torch.per_tensor_affine)
 
+    # Prepare the model for quantization
     model = prepare(model)
-    model = convert(model)
-    return model
 
+    # Convert the model to a quantized version
+    model = convert(model)
+    
+    return model
     
 def get_model_size(model):
     """
