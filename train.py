@@ -21,8 +21,6 @@ from tokenizers.pre_tokenizers import Whitespace
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
-from torch.quantization import get_default_qconfig, prepare, convert, QConfig
-from torch.ao.quantization import get_default_qconfig, prepare, convert
 
 
 # Pruning function
@@ -38,25 +36,6 @@ def prune_model(model, amount=0.5):
         if isinstance(module, nn.Linear):
             prune.l1_unstructured(module, name='weight', amount=amount)
             prune.remove(module, 'weight')
-    return model
-
-def quantize_model(model):
-    # Set the default quantization configuration
-    model.qconfig = get_default_qconfig('fbgemm')
-
-    # Apply custom qconfig to specific layers if necessary
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
-            # Example: Set custom qconfig if needed for Linear layers
-            module.qconfig = QConfig(activation=default_observer,
-                                     weight=torch.per_tensor_affine)
-
-    # Prepare the model for quantization
-    model = prepare(model)
-
-    # Convert the model to a quantized version
-    model = convert(model)
-    
     return model
     
 def get_model_size(model):
@@ -277,8 +256,6 @@ def train_model(config):
 
         # Prune the model after each epoch
         model = prune_model(model, amount=0.5)
-        # Quantization
-        model = quantize_model(model)
 
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
