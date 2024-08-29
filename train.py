@@ -22,6 +22,7 @@ from tokenizers.pre_tokenizers import Whitespace
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
 from torch.quantization import prepare, convert
+from torch.quantization import QConfig
 
 # Pruning function
 def prune_model(model, amount=0.5):
@@ -39,8 +40,14 @@ def prune_model(model, amount=0.5):
     return model
 
 def quantize_model(model):
-    model.eval()
-    model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+    model.qconfig = get_default_qconfig('fbgemm')
+
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Linear):
+            module.qconfig = QConfig(activation=default_observer,
+                                     weight=per_tensor_affine)
+        # Add more conditions as needed
+
     model = prepare(model)
     model = convert(model)
     return model
