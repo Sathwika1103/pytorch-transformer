@@ -21,9 +21,10 @@ from tokenizers.pre_tokenizers import Whitespace
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
+from torch.quantization import prepare, convert
 
 # Pruning function
-def prune_model(model, amount=0.4):
+def prune_model(model, amount=0.5):
     """
     Prune the model by removing a percentage of connections.
     
@@ -36,6 +37,14 @@ def prune_model(model, amount=0.4):
             prune.l1_unstructured(module, name='weight', amount=amount)
             prune.remove(module, 'weight')
     return model
+
+def quantize_model(model):
+    model.eval()
+    model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+    model = prepare(model)
+    model = convert(model)
+    return model
+
     
 def get_model_size(model):
     """
@@ -254,11 +263,9 @@ def train_model(config):
         run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, config['seq_len'], device, lambda msg: batch_iterator.write(msg), global_step, writer)
 
         # Prune the model after each epoch
-        model = prune_model(model, amount=0.2)
-
-        # Print the size of the pruned model
-        model_size = get_model_size(model)
-        print(f"Model size after pruning at epoch {epoch:02d}: {model_size:.2f} MB")
+        model = prune_model(model, amount=0.5)
+        # Quantization
+        model = quantize_model(model)
 
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
@@ -267,6 +274,10 @@ def train_model(config):
             'optimizer_state_dict': optimizer.state_dict(),
             'global_step': global_step
         }, model_filename)
+
+        # Print the size of the pruned model
+        model_size = get_model_size(model)
+        print(f"Model size after pruning at epoch {epoch:02d}: {model_size:.2f} MB")
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
