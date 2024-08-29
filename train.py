@@ -22,7 +22,7 @@ from tokenizers.pre_tokenizers import Whitespace
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
 from torch.quantization import get_default_qconfig, prepare, convert, QConfig
-from torch.ao.quantization.observer import default_observer  # Import if using a custom QConfig
+from torch.ao.quantization import get_default_qconfig, prepare, convert
 
 
 # Pruning function
