@@ -36,6 +36,24 @@ def prune_model(model, amount=0.2):
             prune.l1_unstructured(module, name='weight', amount=amount)
             prune.remove(module, 'weight')
     return model
+    
+def get_model_size(model):
+    """
+    Calculate the size of the model in MB.
+    
+    :param model: The model to calculate the size of
+    :return: Size of the model in megabytes
+    """
+    param_size = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+
+    buffer_size = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+
+    size_all_mb = (param_size + buffer_size) / 1024 ** 2
+    return size_all_mb
 
 def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
     sos_idx = tokenizer_tgt.token_to_id('[SOS]')
@@ -237,6 +255,10 @@ def train_model(config):
 
         # Prune the model after each epoch
         model = prune_model(model, amount=0.2)
+
+        # Print the size of the pruned model
+        model_size = get_model_size(model)
+        print(f"Model size after pruning at epoch {epoch:02d}: {model_size:.2f} MB")
 
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
