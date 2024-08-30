@@ -21,7 +21,7 @@ from tokenizers.pre_tokenizers import Whitespace
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
-
+from quanto import quantize, freeze
 
 # Pruning function
 def prune_model(model, amount=0.5):
@@ -256,6 +256,7 @@ def train_model(config):
 
         # Prune the model after each epoch
         model = prune_model(model, amount=0.5)
+        model = quantize(model, weights=torch.int8, activations=None)
 
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
@@ -267,7 +268,7 @@ def train_model(config):
 
         # Print the size of the pruned model
         model_size = get_model_size(model)
-        print(f"Model size after pruning at epoch {epoch:02d}: {model_size:.2f} MB")
+        print(f"Model size after pruning and quantisation at epoch {epoch:02d}: {model_size:.2f} MB")
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
