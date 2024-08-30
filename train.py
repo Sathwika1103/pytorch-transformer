@@ -258,6 +258,10 @@ def train_model(config):
         model = prune_model(model, amount=0.5)
         model = quantize(model, weights=torch.int8, activations=None)
 
+        # Print the size of the pruned model
+        model_size = get_model_size(model)
+        print(f"Model size after pruning and quantisation at epoch {epoch:02d}: {model_size:.2f} MB")
+
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
             'epoch': epoch,
@@ -266,9 +270,6 @@ def train_model(config):
             'global_step': global_step
         }, model_filename)
 
-        # Print the size of the pruned model
-        model_size = get_model_size(model)
-        print(f"Model size after pruning and quantisation at epoch {epoch:02d}: {model_size:.2f} MB")
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
