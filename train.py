@@ -38,6 +38,21 @@ def prune_model(model, amount=0.5):
             prune.remove(module, 'weight')
     return model
 
+def named_module_tensors(module, recurse=False):
+    for named_parameter in module.named_parameters(recurse=recurse):
+      name, val = named_parameter
+      flag = True
+      if hasattr(val,"_data") or hasattr(val,"_scale"):
+        if hasattr(val,"_data"):
+          yield name + "._data", val._data
+        if hasattr(val,"_scale"):
+          yield name + "._scale", val._scale
+      else:
+        yield named_parameter
+
+    for named_buffer in module.named_buffers(recurse=recurse):
+      yield named_buffer
+
 def dtype_byte_size(dtype):
     """
     Returns the size (in bytes) occupied by one parameter of type `dtype`.
