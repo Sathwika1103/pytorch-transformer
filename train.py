@@ -203,6 +203,7 @@ def train_model(config):
     
     # Define and initialize the student model
     student_model = get_model_distillation(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
+    
     writer = SummaryWriter(config['experiment_name'])
 
     optimizer = torch.optim.Adam(student_model.parameters(), lr=config['lr'], eps=1e-9)
