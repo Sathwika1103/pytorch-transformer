@@ -179,6 +179,10 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config["seq_len"], config['seq_len'], d_model=config['d_model'])
     return model
 
+def get_model_distillation(config, vocab_src_len, vocab_tgt_len):
+    model = build_student_transformer(vocab_src_len, vocab_tgt_len, config["seq_len"], config['seq_len'],  d_model=config['d_model']//2)
+    return model
+
 def train_model(config):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
     print("Using device:", device)
@@ -198,10 +202,7 @@ def train_model(config):
     teacher_model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
     
     # Define and initialize the student model
-    student_model = build_student_transformer(vocab_src_len=tokenizer_src.get_vocab_size(),
-                                              vocab_tgt_len=tokenizer_tgt.get_vocab_size(),
-                                              seq_len=config['seq_len'], 
-                                              d_model=config['d_model']//2).to(device)
+    student_model = get_model_distillation(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
     writer = SummaryWriter(config['experiment_name'])
 
     optimizer = torch.optim.Adam(student_model.parameters(), lr=config['lr'], eps=1e-9)
