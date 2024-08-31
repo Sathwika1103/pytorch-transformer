@@ -28,6 +28,21 @@ def knowledge_distillation_loss(student_logits, teacher_logits, labels, temperat
                                                             torch.softmax(teacher_logits / temperature, dim=-1)) * (temperature ** 2)
     ce_loss = nn.CrossEntropyLoss()(student_logits, labels)
     return alpha * ce_loss + (1 - alpha) * distillation_loss
+
+# Pruning function
+def prune_model(model, amount=0.5):
+    """
+    Prune the model by removing a percentage of connections.
+    
+    :param model: The model to be pruned
+    :param amount: Percentage of connections to prune
+    :return: Pruned model
+    """
+    for name, module in model.named_modules():
+        if isinstance(module, nn.Linear):
+            prune.l1_unstructured(module, name='weight', amount=amount)
+            prune.remove(module, 'weight')
+    return model
     
 def get_model_size(model):
     """
@@ -265,6 +280,12 @@ def train_model(config):
 
         run_validation(student_model, val_dataloader, tokenizer_src, tokenizer_tgt, config['seq_len'], device, lambda msg: batch_iterator.write(msg), global_step, writer)
 
+        # Prune the model after each epoch
+        student_model = prune_model(student_model, amount=0.5)
+        # Print the size of the pruned model
+        model_size = get_model_size(student_model)
+        print(f"Model size after pruning and knowledgre distillation at epoch {epoch:02d}: {model_size:.2f} MB")
+        
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
         torch.save({
             'epoch': epoch,
