@@ -273,6 +273,11 @@ def train_model(config):
             'global_step': global_step
         }, model_filename)
 
+        # Calculate and print the model size
+        model_size = os.path.getsize(model_filename)
+        print(f"Model saved as {model_filename}")
+        print(f"Model size: {model_size / (1024 * 1024):.2f} MB")  # Convert size to MB
+
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     config = get_config()
