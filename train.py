@@ -281,6 +281,10 @@ def train_model(config):
             'global_step': global_step
         }, model_filename)
 
+    # Measure the original model size
+    original_model_size = os.path.getsize(model_filename) / (1024 * 1024)
+    print(f"Original model size: {original_model_size:.2f} MB")
+
     # Apply dynamic quantization to the model
     model = torch.quantization.quantize_dynamic(
         model,  # the model to quantize
@@ -294,6 +298,13 @@ def train_model(config):
     torch.save(model.state_dict(), quantized_model_filename)
     print(f"Quantized model saved to {quantized_model_filename}")
 
+    # Measure the quantized model size
+    quantized_model_size = os.path.getsize(quantized_model_filename) / (1024 * 1024)
+    print(f"Quantized model size: {quantized_model_size:.2f} MB")
+
+    # Print the size reduction
+    reduction_percentage = ((original_model_size - quantized_model_size) / original_model_size) * 100
+    print(f"Model size reduced by: {reduction_percentage:.2f}%")
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     config = get_config()
