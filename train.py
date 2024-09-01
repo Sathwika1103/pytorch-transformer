@@ -28,24 +28,6 @@ def knowledge_distillation_loss(student_logits, teacher_logits, labels, temperat
                                                             torch.softmax(teacher_logits / temperature, dim=-1)) * (temperature ** 2)
     ce_loss = nn.CrossEntropyLoss()(student_logits, labels)
     return alpha * ce_loss + (1 - alpha) * distillation_loss
-    
-def get_model_size(model):
-    """
-    Calculate the size of the model in MB.
-    
-    :param model: The model to calculate the size of
-    :return: Size of the model in megabytes
-    """
-    param_size = 0
-    for param in model.parameters():
-        param_size += param.nelement() * param.element_size()
-
-    buffer_size = 0
-    for buffer in model.buffers():
-        buffer_size += buffer.nelement() * buffer.element_size()
-
-    size_all_mb = (param_size + buffer_size) / 1024 ** 2
-    return size_all_mb
 
 def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
     sos_idx = tokenizer_tgt.token_to_id('[SOS]')
@@ -275,7 +257,7 @@ def train_model(config):
 
     # Measure the original model size
     original_model_size = os.path.getsize(model_filename) / (1024 * 1024)
-    print(f"Original model size: {original_model_size:.2f} MB")
+    print(f"Model size after knowledge distillation: {original_model_size:.2f} MB")
 
     # Apply dynamic quantization to the model
     student_model = torch.quantization.quantize_dynamic(
@@ -294,9 +276,6 @@ def train_model(config):
     quantized_model_size = os.path.getsize(quantized_model_filename) / (1024 * 1024)
     print(f"Quantized model size: {quantized_model_size:.2f} MB")
 
-    # Print the size reduction
-    reduction_percentage = ((original_model_size - quantized_model_size) / original_model_size) * 100
-    print(f"Model size reduced by: {reduction_percentage:.2f}%")
 if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     config = get_config()
