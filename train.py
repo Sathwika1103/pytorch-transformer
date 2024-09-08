@@ -255,6 +255,8 @@ def train_model(config):
             'global_step': global_step
         }, model_filename)
 
+    print(f"Model weights saved to {model_filename}")
+
     # Measure the original model size
     original_model_size = os.path.getsize(model_filename) / (1024 * 1024)
     print(f"Model size after knowledge distillation: {original_model_size:.2f} MB")
