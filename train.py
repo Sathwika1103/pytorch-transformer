@@ -21,6 +21,7 @@ from tokenizers.pre_tokenizers import Whitespace
 
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
+print_shapes = False
 
 def knowledge_distillation_loss(student_logits, teacher_logits, labels, temperature, alpha):
     """Compute the knowledge distillation loss between the student and teacher."""
@@ -53,6 +54,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
     return decoder_input.squeeze(0)
 
 def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_step, writer, num_examples=2):
+    global print_shapes
     model.eval()
     count = 0
 
