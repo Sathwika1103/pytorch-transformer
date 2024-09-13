@@ -29,7 +29,7 @@ def knowledge_distillation_loss(student_logits, teacher_logits, labels, temperat
     ce_loss = nn.CrossEntropyLoss()(student_logits, labels)
     return alpha * ce_loss + (1 - alpha) * distillation_loss
 
-def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
+def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device, print_shapes=False):
     sos_idx = tokenizer_tgt.token_to_id('[SOS]')
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
