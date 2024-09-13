@@ -214,7 +214,7 @@ def train_model(config):
         student_model.train()
         teacher_model.eval()
 
-        batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
+        batch_iterator = tqdm(enumerate(train_dataloader), desc=f"Processing Epoch {epoch:02d}")
         for i, batch in batch_iterator:
             # Only print shapes for the first batch of each epoch
             print_shapes = (i == 0)
