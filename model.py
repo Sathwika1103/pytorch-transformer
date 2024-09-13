@@ -29,10 +29,8 @@ class FeedForwardBlock(nn.Module):
 
     def forward(self, x):
         # (batch, seq_len, d_model) --> (batch, seq_len, d_ff) --> (batch, seq_len, d_model)
-        out = self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
-        print(f"FeedForwardBlock output shape: {out.shape}")
-        return out
-        
+        return self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
+
 class InputEmbeddings(nn.Module):
 
     def __init__(self, d_model: int, vocab_size: int) -> None:
@@ -44,9 +42,7 @@ class InputEmbeddings(nn.Module):
     def forward(self, x):
         # (batch, seq_len) --> (batch, seq_len, d_model)
         # Multiply by sqrt(d_model) to scale the embeddings according to the paper
-        out = self.embedding(x) * math.sqrt(self.d_model)
-        print(f"InputEmbeddings output shape: {out.shape}")
-        return out
+        return self.embedding(x) * math.sqrt(self.d_model)
     
 class PositionalEncoding(nn.Module):
 
@@ -71,8 +67,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False)
-        print(f"PositionalEncoding output shape: {x.shape}")
+        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_model)
         return self.dropout(x)
 
 class ResidualConnection(nn.Module):
@@ -83,9 +78,7 @@ class ResidualConnection(nn.Module):
             self.norm = LayerNormalization(features)
     
         def forward(self, x, sublayer):
-            out = x + self.dropout(sublayer(self.norm(x)))
-            print(f"ResidualConnection output shape: {out.shape}")
-            return out
+            return x + self.dropout(sublayer(self.norm(x)))
 
 class MultiHeadAttentionBlock(nn.Module):
 
@@ -123,13 +116,11 @@ class MultiHeadAttentionBlock(nn.Module):
         query = self.w_q(q) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
         key = self.w_k(k) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
         value = self.w_v(v) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
-        print(f"Query shape: {query.shape}, Key shape: {key.shape}, Value shape: {value.shape}")
 
         # (batch, seq_len, d_model) --> (batch, seq_len, h, d_k) --> (batch, h, seq_len, d_k)
         query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1, 2)
         key = key.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
         value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
-        print(f"MultiHeadAttention reshaped query/key/value: {query.shape}, {key.shape}, {value.shape}")
 
         # Calculate attention
         x, self.attention_scores = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
@@ -137,7 +128,7 @@ class MultiHeadAttentionBlock(nn.Module):
         # Combine all the heads together
         # (batch, h, seq_len, d_k) --> (batch, seq_len, h, d_k) --> (batch, seq_len, d_model)
         x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
-        print(f"MultiHeadAttention output shape: {x.shape}")
+
         # Multiply by Wo
         # (batch, seq_len, d_model) --> (batch, seq_len, d_model)  
         return self.w_o(x)
@@ -151,10 +142,8 @@ class EncoderBlock(nn.Module):
         self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(2)])
 
     def forward(self, x, src_mask):
-        print(f"EncoderBlock input shape: {x.shape}")
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, src_mask))
         x = self.residual_connections[1](x, self.feed_forward_block)
-        print(f"EncoderBlock output shape: {x.shape}")
         return x
     
 class Encoder(nn.Module):
@@ -165,12 +154,11 @@ class Encoder(nn.Module):
         self.norm = LayerNormalization(features)
 
     def forward(self, x, mask):
-        print(f"Encoder input shape: {x.shape}")
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = layer(x, mask)
-        x = self.norm(x)
-        print(f"Encoder output shape: {x.shape}")
-        return x
+            if print_shapes:
+                print(f"Encoder Layer {i + 1} output shape: {x.shape}")
+        return self.norm(x)
 
 class DecoderBlock(nn.Module):
 
@@ -182,11 +170,9 @@ class DecoderBlock(nn.Module):
         self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(3)])
 
     def forward(self, x, encoder_output, src_mask, tgt_mask):
-        print(f"DecoderBlock input shape: {x.shape}")
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, tgt_mask))
         x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output, encoder_output, src_mask))
         x = self.residual_connections[2](x, self.feed_forward_block)
-        print(f"DecoderBlock output shape: {x.shape}")
         return x
     
 class Decoder(nn.Module):
@@ -197,13 +183,12 @@ class Decoder(nn.Module):
         self.norm = LayerNormalization(features)
 
     def forward(self, x, encoder_output, src_mask, tgt_mask):
-        print(f"Decoder input shape: {x.shape}")
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = layer(x, encoder_output, src_mask, tgt_mask)
-        x = self.norm(x)
-        print(f"Decoder output shape: {x.shape}")
-        return x
-        
+            if print_shapes:
+                print(f"Decoder Layer {i + 1} output shape: {x.shape}")
+        return self.norm(x)
+
 class ProjectionLayer(nn.Module):
 
     def __init__(self, d_model, vocab_size) -> None:
@@ -212,9 +197,7 @@ class ProjectionLayer(nn.Module):
 
     def forward(self, x) -> None:
         # (batch, seq_len, d_model) --> (batch, seq_len, vocab_size)
-        out = self.proj(x)
-        print(f"ProjectionLayer output shape: {out.shape}")
-        return out
+        return self.proj(x)
     
 class Transformer(nn.Module):
 
@@ -231,24 +214,35 @@ class Transformer(nn.Module):
     def encode(self, src, src_mask):
         # (batch, seq_len, d_model)
         src = self.src_embed(src)
+        if print_shapes:
+            print(f"Source Embeddings shape: {src.shape}")
         src = self.src_pos(src)
+        if print_shapes:
+            print(f"Source after Positional Encoding shape: {src.shape}")
         encoder_output = self.encoder(src, src_mask)
-        print(f"Encoder output shape: {encoder_output.shape}")
+        if print_shapes:
+            print(f"Encoder output shape: {encoder_output.shape}")
         return encoder_output
     
     def decode(self, encoder_output: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor):
         # (batch, seq_len, d_model)
         tgt = self.tgt_embed(tgt)
+        if print_shapes:
+            print(f"Target Embeddings shape: {tgt.shape}")
         tgt = self.tgt_pos(tgt)
+        if print_shapes:
+            print(f"Target after Positional Encoding shape: {tgt.shape}")
         decoder_output = self.decoder(tgt, encoder_output, src_mask, tgt_mask)
-        print(f"Decoder output shape: {decoder_output.shape}")
+        if print_shapes:
+            print(f"Decoder output shape: {decoder_output.shape}")
         return decoder_output
     
     def project(self, x):
         # (batch, seq_len, vocab_size)
-        out = self.projection_layer(x)
-        print(f"Projection output shape: {out.shape}")
-        return out
+        output = self.projection_layer(x)
+        if print_shapes:
+            print(f"Projected output shape: {output.shape}")
+        return output
     
 def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int, tgt_seq_len: int, d_model: int=512, N: int=6, h: int=8, dropout: float=0.1, d_ff: int=2048) -> Transformer:
     # Create the embedding layers
