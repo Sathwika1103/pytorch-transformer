@@ -237,7 +237,7 @@ class Transformer(nn.Module):
             print(f"Decoder output shape: {decoder_output.shape}")
         return decoder_output
     
-    def project(self, x):
+    def project(self, x, print_shapes=False):
         # (batch, seq_len, vocab_size)
         output = self.projection_layer(x)
         if print_shapes:
