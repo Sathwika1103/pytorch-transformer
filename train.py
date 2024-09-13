@@ -226,13 +226,13 @@ def train_model(config):
             label = batch['label'].to(device)
 
             with torch.no_grad():
-                teacher_output = teacher_model.encode(encoder_input, encoder_mask)
-                teacher_output = teacher_model.decode(teacher_output, encoder_mask, decoder_input, decoder_mask)
-                teacher_logits = teacher_model.project(teacher_output)
+                teacher_output = teacher_model.encode(encoder_input, encoder_mask, print_shapes=print_shapes)
+                teacher_output = teacher_model.decode(teacher_output, encoder_mask, decoder_input, decoder_mask, print_shapes=print_shapes)
+                teacher_logits = teacher_model.project(teacher_output, print_shapes=print_shapes)
 
-            student_output = student_model.encode(encoder_input, encoder_mask)
-            student_output = student_model.decode(student_output, encoder_mask, decoder_input, decoder_mask)
-            student_logits = student_model.project(student_output)
+            student_output = student_model.encode(encoder_input, encoder_mask, print_shapes=print_shapes)
+            student_output = student_model.decode(student_output, encoder_mask, decoder_input, decoder_mask, print_shapes=print_shapes)
+            student_logits = student_model.project(student_output, print_shapes=print_shapes)
 
             loss = knowledge_distillation_loss(student_logits.view(-1, tokenizer_tgt.get_vocab_size()),
                                                teacher_logits.view(-1, tokenizer_tgt.get_vocab_size()),
