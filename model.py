@@ -153,7 +153,7 @@ class Encoder(nn.Module):
         self.layers = layers
         self.norm = LayerNormalization(features)
 
-    def forward(self, x, mask):
+    def forward(self, x, mask, print_shapes=False):
         for i, layer in enumerate(self.layers):
             x = layer(x, mask)
             if print_shapes:
@@ -182,7 +182,7 @@ class Decoder(nn.Module):
         self.layers = layers
         self.norm = LayerNormalization(features)
 
-    def forward(self, x, encoder_output, src_mask, tgt_mask):
+    def forward(self, x, encoder_output, src_mask, tgt_mask, print_shapes=False):
         for i, layer in enumerate(self.layers):
             x = layer(x, encoder_output, src_mask, tgt_mask)
             if print_shapes:
@@ -211,7 +211,7 @@ class Transformer(nn.Module):
         self.tgt_pos = tgt_pos
         self.projection_layer = projection_layer
 
-    def encode(self, src, src_mask):
+    def encode(self, src, src_mask, print_shapes=False):
         # (batch, seq_len, d_model)
         src = self.src_embed(src)
         if print_shapes:
@@ -224,7 +224,7 @@ class Transformer(nn.Module):
             print(f"Encoder output shape: {encoder_output.shape}")
         return encoder_output
     
-    def decode(self, encoder_output: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor):
+    def decode(self, encoder_output: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor, print_shapes=False):
         # (batch, seq_len, d_model)
         tgt = self.tgt_embed(tgt)
         if print_shapes:
