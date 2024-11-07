@@ -149,9 +149,6 @@ def get_ds(config):
         tgt_ids = tokenizer_tgt.encode(item['translation'][config['lang_tgt']]).ids
         max_len_src = max(max_len_src, len(src_ids))
         max_len_tgt = max(max_len_tgt, len(tgt_ids))
-
-    print(f'Max length of source sentence: {max_len_src}')
-    print(f'Max length of target sentence: {max_len_tgt}')
     
 
     train_dataloader = DataLoader(train_ds, batch_size=config['batch_size'], shuffle=True)
@@ -169,14 +166,7 @@ def get_model_distillation(config, vocab_src_len, vocab_tgt_len):
 
 def train_model(config):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
-    print("Using device:", device)
-    if (device == 'cuda'):
-        print(f"Device name: {torch.cuda.get_device_name(device.index)}")
-        print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
-    elif (device == 'mps'):
-        print(f"Device name: <mps>")
-    else:
-        print("NOTE: If you have a GPU, consider using it for training.")
+    
     device = torch.device(device)
 
     Path(f"{config['datasource']}_{config['model_folder']}").mkdir(parents=True, exist_ok=True)
@@ -203,8 +193,7 @@ def train_model(config):
         optimizer.load_state_dict(state['optimizer_state_dict'])
         initial_epoch = state['epoch'] + 1
         global_step = state['global_step']
-    else:
-        print('No model to preload, starting from scratch')
+
 
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
     
